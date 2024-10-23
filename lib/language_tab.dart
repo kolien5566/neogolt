@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:neoglot/audio_button.dart';
+import 'package:neoglot/widgets/audio_button.dart';
 import 'package:neoglot/language_enum.dart';
 
 class LanguageTab extends StatelessWidget {
@@ -49,18 +49,23 @@ class TabContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    final size = MediaQuery.of(context).size;
+    // 判断宽度是否大于高度
+    final isWide = size.width > size.height;
+
+    return Flex(
+      direction: isWide ? Axis.horizontal : Axis.vertical,
       children: [
         Expanded(
           child: Padding(
             padding: const EdgeInsets.all(80.0),
-            child: AudioButton(language: language1, onPressedEnd: () {}),
+            child: AudioButton(language: language1, onPressedStart: () {}, onPressedEnd: () {}),
           ),
         ),
         Expanded(
           child: Padding(
             padding: const EdgeInsets.all(80.0),
-            child: AudioButton(language: language2, onPressedEnd: () {}),
+            child: AudioButton(language: language2, onPressedStart: () {}, onPressedEnd: () {}),
           ),
         ),
       ],
