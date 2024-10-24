@@ -1,25 +1,24 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:neoglot/language_enum.dart';
+import './multi_ripple_painter.dart';
 
-import 'ripple_painter.dart';
-
-// 按钮状态枚举
 enum ButtonState {
-  idle, // 闲置状态
-  recording, // 录音状态
-  playing, // 播放状态
+  idle,
+  recording,
+  pausing,
+  playing,
 }
 
 class AudioButton extends StatefulWidget {
   final LanguageEnum language;
-  final VoidCallback? onPressedStart;
-  final VoidCallback? onPressedEnd;
+  final VoidCallback? onPressed;
 
   const AudioButton({
     super.key,
     required this.language,
-    this.onPressedStart,
-    required this.onPressedEnd,
+    required this.onPressed,
   });
 
   @override
@@ -28,186 +27,173 @@ class AudioButton extends StatefulWidget {
 
 class _AudioButtonState extends State<AudioButton> with TickerProviderStateMixin {
   late AnimationController _progressController;
-  late AnimationController _rippleRecordingController;
-  late AnimationController _ripplePlayingController;
+  final List<Ripple> _ripples = [];
+  late Ticker _rippleTicker;
+  Timer? _rippleTimer;
+  Timer? _pauseTimer;
+
   ButtonState _buttonState = ButtonState.idle;
+  double _lastProgressValue = 0.0;
 
   @override
   void initState() {
     super.initState();
 
-    // 进度条动画控制器（1秒内从0到1）
+    // 进度条动画控制器
     _progressController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
     );
 
+    _progressController.addListener(() {
+      _lastProgressValue = _progressController.value;
+    });
+
     _progressController.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
-        // 进度条完成，触发 onPressed 并开始录音波纹动画
-        widget.onPressedEnd?.call();
-        setState(() {
-          _buttonState = ButtonState.recording;
-        });
-        _startRecordingRipple();
+        if (_buttonState == ButtonState.playing) {
+          _stopRippleAnimation();
+        }
+        if (_buttonState != ButtonState.recording) {
+          setState(() {
+            _buttonState = ButtonState.recording;
+          });
+          _startRippleAnimation(true);
+          // 触发录音开始的回调
+          widget.onPressed?.call();
+        }
       } else if (status == AnimationStatus.dismissed) {
-        // 反向动画完成，进入播放状态
         setState(() {
-          _buttonState = ButtonState.playing;
+          _buttonState = ButtonState.pausing;
         });
-        _startPlayingRipple();
+        // 停止录音波纹动画
+        _stopRippleAnimation();
+        // 暂停1秒
+        _pauseTimer = Timer(const Duration(seconds: 1), () {
+          setState(() {
+            _buttonState = ButtonState.playing;
+          });
+          _startRippleAnimation(false);
+        });
       }
     });
 
-    // 录音波纹动画控制器（从大到小，持续2秒，重复）
-    _rippleRecordingController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 3),
-    );
-
-    // 播放波纹动画控制器（从小到大，持续2秒，重复）
-    _ripplePlayingController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 3),
-    );
+    // 初始化波纹生成器
+    _rippleTicker = createTicker((Duration elapsed) {
+      setState(() {
+        // 移除已完成的波纹
+        _ripples.removeWhere((ripple) {
+          if (!ripple.controller.isAnimating) {
+            ripple.dispose();
+            return true;
+          }
+          return false;
+        });
+        // 如果没有活跃的波纹，且不在需要波纹的状态，停止 Ticker
+        if (_ripples.isEmpty && _buttonState != ButtonState.recording && _buttonState != ButtonState.playing) {
+          if (_rippleTicker.isActive) {
+            _rippleTicker.stop();
+          }
+        }
+      });
+    });
   }
 
   @override
   void dispose() {
     _progressController.dispose();
-    _rippleRecordingController.dispose();
-    _ripplePlayingController.dispose();
+    _rippleTicker.dispose();
+    _rippleTimer?.cancel();
+    _pauseTimer?.cancel();
+    for (var ripple in _ripples) {
+      ripple.dispose();
+    }
     super.dispose();
   }
 
-  // 开始录音波纹动画
-  void _startRecordingRipple() {
-    _rippleRecordingController.repeat();
-  }
-
-  // 停止录音波纹动画
-  void _stopRecordingRipple() {
-    _rippleRecordingController.stop();
-    _rippleRecordingController.reset();
-  }
-
-  // 开始播放波纹动画
-  void _startPlayingRipple() {
-    _ripplePlayingController.repeat(reverse: false);
-  }
-
-  // 停止播放波纹动画
-  void _stopPlayingRipple() {
-    _ripplePlayingController.stop();
-    _ripplePlayingController.reset();
-  }
-
-  // 处理按下事件
-  void _onTapDown(TapDownDetails details) {
-    if (_buttonState == ButtonState.idle) {
-      _progressController.forward();
+  // 播放波纹动画，inward向内
+  void _startRippleAnimation(bool inward) {
+    // 启动 Ticker
+    if (!_rippleTicker.isActive) {
+      _rippleTicker.start();
     }
-  }
 
-  // 处理松开事件
-  void _onTapUp(TapUpDetails details) {
-    if (_buttonState == ButtonState.idle) {
-      if (_progressController.isAnimating) {
-        _progressController.reverse();
+    // 定期生成波纹
+    const rippleInterval = Duration(seconds: 1);
+    _rippleTimer = Timer.periodic(rippleInterval, (timer) {
+      if (_buttonState == ButtonState.recording || _buttonState == ButtonState.playing) {
+        setState(() {
+          _ripples.add(Ripple(
+            vsync: this,
+            duration: const Duration(seconds: 3), // 增加波纹动画持续时间
+            inward: inward,
+          ));
+        });
+      } else {
+        timer.cancel();
       }
-    } else if (_buttonState == ButtonState.recording) {
-      // 停止录音波纹动画并开始播放播声音波纹动画
-      _stopRecordingRipple();
-      _progressController.reverse();
-    }
+    });
   }
 
-  // 处理取消事件（如用户滑出按钮范围）
-  void _onTapCancel() {
-    if (_buttonState == ButtonState.idle) {
-      if (_progressController.isAnimating) {
-        _progressController.reverse();
-      }
-    } else if (_buttonState == ButtonState.recording) {
-      // 停止录音波纹动画并开始播放播声音波纹动画
-      _stopRecordingRipple();
-      _progressController.reverse();
-    }
+  // 停止波纹动画
+  void _stopRippleAnimation() {
+    _rippleTimer?.cancel();
+    _rippleTimer = null;
   }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown: _onTapDown, // 按下
-      onTapUp: _onTapUp, // 松开
-      onTapCancel: _onTapCancel, // 取消
+      // 按下
+      onTapDown: (TapDownDetails? details) {
+        _progressController.forward(from: _lastProgressValue);
+      },
+      // 松开
+      onTapUp: (TapUpDetails? details) {
+        _progressController.reverse();
+      },
+      // 取消
+      onTapCancel: () {
+        _progressController.reverse();
+      },
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // 录音波纹动画（位于最底层）
-          if (_buttonState == ButtonState.recording)
-            AnimatedBuilder(
-              animation: _rippleRecordingController,
-              builder: (context, child) {
-                return CustomPaint(
-                  painter: RipplePainter(
-                    animationValue: _rippleRecordingController.value,
-                    color: widget.language == LanguageEnum.CN
-                        ? Colors.redAccent.withOpacity(0.5)
-                        : Colors.blueAccent.withOpacity(0.5),
-                    maxRadius: 120,
-                    shrink: true,
-                  ),
-                );
-              },
+          // 波纹动画在按钮下方
+          Positioned.fill(
+            child: CustomPaint(
+              painter: MultiRipplePainter(
+                ripples: _ripples,
+              ),
             ),
-          // 播放波纹动画（位于最底层）
-          if (_buttonState == ButtonState.playing)
-            AnimatedBuilder(
-              animation: _ripplePlayingController,
-              builder: (context, child) {
-                return CustomPaint(
-                  painter: RipplePainter(
-                    animationValue: _ripplePlayingController.value,
-                    color: widget.language == LanguageEnum.CN
-                        ? Colors.blueAccent.withOpacity(0.5)
-                        : Colors.redAccent.withOpacity(0.5),
-                    maxRadius: 120,
-                    shrink: false,
-                  ),
-                );
-              },
-            ),
-          // 圆环进度条（位于按钮下方）
+          ),
+          // 进度条
           SizedBox(
-            width: 100, // 调整大小
-            height: 100,
+            width: 120,
+            height: 120,
             child: AnimatedBuilder(
               animation: _progressController,
               builder: (context, child) {
                 return CircularProgressIndicator(
                   value: _progressController.value,
-                  strokeWidth: 6,
-                  valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
-                  backgroundColor: Colors.transparent,
+                  strokeWidth: 5,
+                  //valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
                 );
               },
             ),
           ),
-          // 中间的按钮（位于最上层）
+          // 中间的按钮
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              minimumSize: const Size(80, 80), // 调整按钮大小
+              minimumSize: const Size(120, 120), // 按钮大小
               shape: const CircleBorder(),
-              padding: const EdgeInsets.all(20), // 内边距
-              backgroundColor:
-                  widget.language == LanguageEnum.CN ? Colors.redAccent.withOpacity(0.5) : Colors.blueAccent.withOpacity(0.5),
+              backgroundColor: Theme.of(context).colorScheme.primary,
             ),
-            onPressed: () {}, // 禁用按钮的默认 onPressed
+            onPressed: () {},
             child: Text(
               widget.language.name,
               style: const TextStyle(
-                fontSize: 20,
+                fontSize: 24,
                 color: Colors.white,
               ),
             ),

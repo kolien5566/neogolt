@@ -59,13 +59,13 @@ class TabContent extends StatelessWidget {
         Expanded(
           child: Padding(
             padding: const EdgeInsets.all(80.0),
-            child: AudioButton(language: language1, onPressedStart: () {}, onPressedEnd: () {}),
+            child: AudioButton(language: language1, onPressed: () {}),
           ),
         ),
         Expanded(
           child: Padding(
             padding: const EdgeInsets.all(80.0),
-            child: AudioButton(language: language2, onPressedStart: () {}, onPressedEnd: () {}),
+            child: AudioButton(language: language2, onPressed: () {}),
           ),
         ),
       ],
