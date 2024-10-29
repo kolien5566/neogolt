@@ -50,7 +50,7 @@ class TabContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    // 判断宽度是否大于高度
+    // 判断宽度是否大于高度，宽的横向排列
     final isWide = size.width > size.height;
 
     return Flex(

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:neoglot/language_enum.dart';
 
 class MultiRipplePainter extends CustomPainter {
   final List<Ripple> ripples;
+  final LanguageEnum language;
 
   MultiRipplePainter({
     required this.ripples,
+    required this.language,
   });
 
   @override
@@ -14,8 +17,6 @@ class MultiRipplePainter extends CustomPainter {
       final Paint paint = Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 3;
-
-      Color baseColor = Colors.blueAccent;
 
       final double maxRadius = size.width / 2;
       double currentRadius;
@@ -34,6 +35,10 @@ class MultiRipplePainter extends CustomPainter {
       // 修改透明度计算，始终使外圈更透明
       final double alpha = (1.0 - alphaProgress * alphaProgress).clamp(0.0, 1.0);
 
+      Color baseColor = Colors.blueAccent;
+      if ((language == LanguageEnum.CN && ripple.inward) || (language != LanguageEnum.CN && !ripple.inward)) {
+        baseColor = Colors.redAccent;
+      }
       paint.color = baseColor.withOpacity(alpha * 0.3);
 
       if (currentRadius > 0) {

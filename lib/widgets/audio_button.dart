@@ -63,18 +63,20 @@ class _AudioButtonState extends State<AudioButton> with TickerProviderStateMixin
           widget.onPressed?.call();
         }
       } else if (status == AnimationStatus.dismissed) {
-        setState(() {
-          _buttonState = ButtonState.pausing;
-        });
-        // 停止录音波纹动画
-        _stopRippleAnimation();
-        // 暂停1秒
-        _pauseTimer = Timer(const Duration(seconds: 1), () {
+        if (_buttonState == ButtonState.recording) {
           setState(() {
-            _buttonState = ButtonState.playing;
+            _buttonState = ButtonState.pausing;
           });
-          _startRippleAnimation(false);
-        });
+          // 停止录音波纹动画
+          _stopRippleAnimation();
+          // 暂停1秒
+          _pauseTimer = Timer(const Duration(seconds: 1), () {
+            setState(() {
+              _buttonState = ButtonState.playing;
+            });
+            _startRippleAnimation(false);
+          });
+        }
       }
     });
 
@@ -119,20 +121,25 @@ class _AudioButtonState extends State<AudioButton> with TickerProviderStateMixin
     }
 
     // 定期生成波纹
+    _addRipple(inward);
     const rippleInterval = Duration(seconds: 1);
     _rippleTimer = Timer.periodic(rippleInterval, (timer) {
-      if (_buttonState == ButtonState.recording || _buttonState == ButtonState.playing) {
-        setState(() {
-          _ripples.add(Ripple(
-            vsync: this,
-            duration: const Duration(seconds: 3), // 增加波纹动画持续时间
-            inward: inward,
-          ));
-        });
-      } else {
-        timer.cancel();
-      }
+      _addRipple(inward);
     });
+  }
+
+  void _addRipple(bool inward) {
+    if (_buttonState == ButtonState.recording || _buttonState == ButtonState.playing) {
+      setState(() {
+        _ripples.add(Ripple(
+          vsync: this,
+          duration: const Duration(seconds: 3),
+          inward: inward,
+        ));
+      });
+    } else {
+      _rippleTimer?.cancel();
+    }
   }
 
   // 停止波纹动画
@@ -143,6 +150,7 @@ class _AudioButtonState extends State<AudioButton> with TickerProviderStateMixin
 
   @override
   Widget build(BuildContext context) {
+    Color baseColor = widget.language == LanguageEnum.CN ? Colors.redAccent : Colors.blueAccent;
     return GestureDetector(
       // 按下
       onTapDown: (TapDownDetails? details) {
@@ -164,6 +172,7 @@ class _AudioButtonState extends State<AudioButton> with TickerProviderStateMixin
             child: CustomPaint(
               painter: MultiRipplePainter(
                 ripples: _ripples,
+                language: widget.language,
               ),
             ),
           ),
@@ -177,7 +186,7 @@ class _AudioButtonState extends State<AudioButton> with TickerProviderStateMixin
                 return CircularProgressIndicator(
                   value: _progressController.value,
                   strokeWidth: 5,
-                  //valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
+                  valueColor: AlwaysStoppedAnimation<Color>(baseColor),
                 );
               },
             ),
@@ -187,7 +196,7 @@ class _AudioButtonState extends State<AudioButton> with TickerProviderStateMixin
             style: ElevatedButton.styleFrom(
               minimumSize: const Size(120, 120), // 按钮大小
               shape: const CircleBorder(),
-              backgroundColor: Theme.of(context).colorScheme.primary,
+              backgroundColor: baseColor,
             ),
             onPressed: () {},
             child: Text(
