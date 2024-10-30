@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:neoglot/language_selection/language_tab.dart';
+import 'package:neoglot/home_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -26,7 +26,7 @@ class MyApp extends StatelessWidget {
             backgroundColor: Theme.of(context).colorScheme.inversePrimary,
             title: Text("RealTime Traslator"),
           ),
-          body: LanguageTab()),
+          body: HomePage()),
     );
   }
 }

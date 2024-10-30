@@ -29,9 +29,17 @@ Future<void> _chatCompletions(final OpenAIClient client) async {
       ),
       messages: [
         ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string(
-            'Is a golden retriever a good family dog?',
-          ),
+          content: ChatCompletionUserMessageContent.parts([
+            ChatCompletionMessageContentPart.text(
+              text: 'Do what the recording says',
+            ),
+            ChatCompletionMessageContentPart.audio(
+              inputAudio: ChatCompletionMessageInputAudio(
+                data: 'UklGRoYZAQBXQVZFZm10I...//X//v8FAOj/GAD+/7z/',
+                format: ChatCompletionMessageInputAudioFormat.wav,
+              ),
+            ),
+          ]),
         ),
       ],
     ),
