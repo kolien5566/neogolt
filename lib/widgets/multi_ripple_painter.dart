@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:neoglot/language_enum.dart';
+import 'package:neoglot/language_selection/language_enum.dart';
 
 class MultiRipplePainter extends CustomPainter {
   final List<Ripple> ripples;

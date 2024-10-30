@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:neoglot/language_tab.dart';
+import 'package:neoglot/language_selection/language_tab.dart';
 
 void main() {
   runApp(const MyApp());

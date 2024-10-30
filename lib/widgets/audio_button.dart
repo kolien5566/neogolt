@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:neoglot/language_enum.dart';
+import 'package:neoglot/language_selection/language_enum.dart';
 import './multi_ripple_painter.dart';
 
 enum ButtonState {

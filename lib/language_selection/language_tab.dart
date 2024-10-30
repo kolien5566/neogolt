@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:neoglot/widgets/audio_button.dart';
-import 'package:neoglot/language_enum.dart';
+import 'package:neoglot/language_selection/language_enum.dart';
 
 class LanguageTab extends StatelessWidget {
   const LanguageTab({super.key});
