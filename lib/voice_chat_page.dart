@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:neoglot/utils/audio_converter.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:record/record.dart';
 import 'package:just_audio/just_audio.dart';
@@ -97,7 +98,7 @@ class _VoiceChatPageState extends State<VoiceChatPage> {
             ChatCompletionMessage.user(
               content: ChatCompletionUserMessageContent.parts([
                 const ChatCompletionMessageContentPart.text(
-                  text: 'translate this into English',
+                  text: 'translate this Chinese into English',
                 ),
                 ChatCompletionMessageContentPart.audio(
                   inputAudio: ChatCompletionMessageInputAudio(
@@ -127,19 +128,21 @@ class _VoiceChatPageState extends State<VoiceChatPage> {
             final decodedAudio = base64Decode(choice.delta.audio!.data!);
             audioBuffer.addAll(decodedAudio);
 
-            // 当积累了足够的音频数据时，播放它
-            if (audioBuffer.length >= 4096) {
+            // 当积累了足够的音频数据时，转换并播放它
+            if (audioBuffer.length > 0) {
               // 可以调整这个阈值
-              await _playAudioChunk(Uint8List.fromList(audioBuffer));
+              final wavData = AudioConverter.pcmToWav(audioBuffer, 24000);
+              await _playAudioChunk(wavData);
               audioBuffer.clear();
             }
           }
         }
       }
 
-      // 播放剩余的音频数据
+      // 处理剩余的音频数据
       if (audioBuffer.isNotEmpty) {
-        await _playAudioChunk(Uint8List.fromList(audioBuffer));
+        final wavData = AudioConverter.pcmToWav(audioBuffer, 24000);
+        await _playAudioChunk(wavData);
       }
     } catch (e) {
       print('Error processing audio: $e');
@@ -148,13 +151,8 @@ class _VoiceChatPageState extends State<VoiceChatPage> {
 
   Future<void> _playAudioChunk(Uint8List audioData) async {
     try {
-      // 创建一个内存音频源
       final audioSource = MemoryAudioSource(audioData);
-
-      // 设置音频源并播放
-      await _audioPlayer.setAudioSource(
-        audioSource,
-      );
+      await _audioPlayer.setAudioSource(audioSource);
       await _audioPlayer.play();
     } catch (e) {
       print('Error playing audio chunk: $e');
@@ -163,65 +161,68 @@ class _VoiceChatPageState extends State<VoiceChatPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Voice Chat')),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            GestureDetector(
-              onLongPressStart: (_) => _startRecording(),
-              onLongPressEnd: (_) => _stopRecording(),
-              child: Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  color: _isRecording ? Colors.red : (_isProcessing ? Colors.orange : Colors.blue),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  _isRecording ? Icons.mic : (_isProcessing ? Icons.hourglass_empty : Icons.mic_none),
-                  color: Colors.white,
-                  size: 50,
-                ),
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          GestureDetector(
+            onLongPressStart: (_) => _startRecording(),
+            onLongPressEnd: (_) => _stopRecording(),
+            child: Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                color: _isRecording ? Colors.red : (_isProcessing ? Colors.orange : Colors.blue),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                _isRecording ? Icons.mic : (_isProcessing ? Icons.hourglass_empty : Icons.mic_none),
+                color: Colors.white,
+                size: 50,
               ),
             ),
-            const SizedBox(height: 20),
-            Text(
-              _isRecording ? 'Recording...' : (_isProcessing ? 'Processing...' : 'Hold to Record'),
-              style: const TextStyle(fontSize: 18),
-            ),
-            const SizedBox(height: 20),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            _isRecording ? 'Recording...' : (_isProcessing ? 'Processing...' : 'Hold to Record'),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.grey[200],
+                borderRadius: BorderRadius.circular(10),
+              ),
               child: Text(
                 'Transcript: $_transcript',
                 style: const TextStyle(fontSize: 16),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
-// 定义一个自定义的 MemoryAudioSource
 class MemoryAudioSource extends StreamAudioSource {
-  final Uint8List _buffer;
+  final Uint8List bytes;
 
-  MemoryAudioSource(this._buffer);
+  MemoryAudioSource(this.bytes);
 
   @override
   Future<StreamAudioResponse> request([int? start, int? end]) async {
     start ??= 0;
-    end ??= _buffer.length;
+    end ??= bytes.length;
     return StreamAudioResponse(
-      sourceLength: _buffer.length,
+      sourceLength: bytes.length,
       contentLength: end - start,
       offset: start,
-      stream: Stream.value(_buffer.sublist(start, end)),
-      contentType: 'audio/raw',
+      stream: Stream.value(bytes.sublist(start, end)),
+      contentType: 'audio/wav',
     );
   }
 }
