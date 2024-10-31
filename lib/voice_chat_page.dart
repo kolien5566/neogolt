@@ -129,10 +129,9 @@ class _VoiceChatPageState extends State<VoiceChatPage> {
             audioBuffer.addAll(decodedAudio);
 
             // 当积累了足够的音频数据时，转换并播放它
-            if (audioBuffer.length > 100000) {
-              // 可以调整这个阈值
+            if (audioBuffer.length > 300000) {
               final wavData = AudioConverter.pcmToWav(audioBuffer, 24000);
-              await _playAudioChunk(wavData);
+              await _addAudioChunkToStream(wavData);
               audioBuffer.clear();
             }
           }
@@ -142,14 +141,16 @@ class _VoiceChatPageState extends State<VoiceChatPage> {
       // 处理剩余的音频数据
       if (audioBuffer.isNotEmpty) {
         final wavData = AudioConverter.pcmToWav(audioBuffer, 24000);
-        await _playAudioChunk(wavData);
+        await _addAudioChunkToStream(wavData);
       }
     } catch (e) {
       print('Error processing audio: $e');
     }
   }
 
-  Future<void> _playAudioChunk(Uint8List audioData) async {
+  Future<void> _addAudioChunkToStream(Uint8List audioData) async {}
+
+  Future<void> _playAudio(Uint8List audioData) async {
     try {
       final audioSource = MemoryAudioSource(audioData);
       await _audioPlayer.setAudioSource(audioSource);

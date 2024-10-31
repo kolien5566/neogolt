@@ -32,3 +32,9 @@ class OpenAIClientSingleton {
     _client.endSession();
   }
 }
+                // ChatCompletionMessageContentPart.audio(
+                //   inputAudio: ChatCompletionMessageInputAudio(
+                //     data: audioBase64,
+                //     format: ChatCompletionMessageInputAudioFormat.wav,
+                //   ),
+                // ),
