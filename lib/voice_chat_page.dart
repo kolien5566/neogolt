@@ -91,21 +91,21 @@ class _VoiceChatPageState extends State<VoiceChatPage> {
           model: ChatCompletionModel.model(ChatCompletionModels.gpt4oAudioPreview),
           modalities: [ChatCompletionModality.text, ChatCompletionModality.audio],
           audio: const ChatCompletionAudioOptions(
-            voice: ChatCompletionAudioVoice.alloy,
+            voice: ChatCompletionAudioVoice.echo,
             format: ChatCompletionAudioFormat.pcm16,
           ),
           messages: [
             ChatCompletionMessage.user(
               content: ChatCompletionUserMessageContent.parts([
                 const ChatCompletionMessageContentPart.text(
-                  text: 'translate this Chinese into English',
+                  text: 'Hello, tell me a story',
                 ),
-                ChatCompletionMessageContentPart.audio(
-                  inputAudio: ChatCompletionMessageInputAudio(
-                    data: audioBase64,
-                    format: ChatCompletionMessageInputAudioFormat.wav,
-                  ),
-                ),
+                // ChatCompletionMessageContentPart.audio(
+                //   inputAudio: ChatCompletionMessageInputAudio(
+                //     data: audioBase64,
+                //     format: ChatCompletionMessageInputAudioFormat.wav,
+                //   ),
+                // ),
               ]),
             ),
           ],
@@ -129,7 +129,7 @@ class _VoiceChatPageState extends State<VoiceChatPage> {
             audioBuffer.addAll(decodedAudio);
 
             // 当积累了足够的音频数据时，转换并播放它
-            if (audioBuffer.length > 0) {
+            if (audioBuffer.length > 100000) {
               // 可以调整这个阈值
               final wavData = AudioConverter.pcmToWav(audioBuffer, 24000);
               await _playAudioChunk(wavData);
