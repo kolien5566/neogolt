@@ -12,11 +12,12 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
   http: ^1.2.2
-  openai_dart: ^0.4.3
   flutter_dotenv: ^5.2.1
   path_provider: ^2.1.5
-  just_audio: ^0.9.41
+  just_audio: ^0.9.42
   record: ^5.1.2
+  openai_dart:
+    path: /Users/kay/workspace/flutter/langchain_dart/packages/openai_dart
 
 dev_dependencies:
   flutter_test:
