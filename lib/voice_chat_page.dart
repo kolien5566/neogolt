@@ -115,8 +115,9 @@ class _VoiceChatPageState extends State<VoiceChatPage> {
           messages: [
             ChatCompletionMessage.user(
               content: ChatCompletionUserMessageContent.parts([
-                const ChatCompletionMessageContentPart.text(
-                  text: 'Translate to Chinese if English, to English if Chinese.',
+                ChatCompletionMessageContentPart.text(
+                  text:
+                      'Translate to ${appConfig.language1} if ${appConfig.language2}, to ${appConfig.language2} if ${appConfig.language1}.',
                 ),
                 ChatCompletionMessageContentPart.audio(
                   inputAudio: ChatCompletionMessageInputAudio(
