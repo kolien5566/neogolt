@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:neoglot/language_selection/language_tab.dart';
 import 'package:neoglot/openai_client_singleton.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:neoglot/voice_chat_page.dart';
@@ -26,12 +25,6 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    // return Scaffold(
-    //     appBar: AppBar(
-    //       backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-    //       title: Text("RealTime Traslator"),
-    //     ),
-    //     body: LanguageTab());
     return const VoiceChatPage();
   }
 }

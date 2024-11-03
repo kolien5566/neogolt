@@ -25,6 +25,7 @@ class MyApp extends StatelessWidget {
           appBar: AppBar(
             backgroundColor: Theme.of(context).colorScheme.inversePrimary,
             title: Text("RealTime Traslator"),
+            centerTitle: true,
           ),
           body: HomePage()),
     );
