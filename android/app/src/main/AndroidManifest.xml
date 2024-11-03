@@ -6,7 +6,7 @@
     <application
         android:label="neoglot"
         android:name="${applicationName}"
-        android:icon="@mipmap/launcher_icon"
+        android:icon="@mipmap/ic_launcher"
         tools:replace="android:label,android:icon">
         <activity
             android:name=".MainActivity"

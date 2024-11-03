@@ -1,8 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:neoglot/home_page.dart';
+import 'package:provider/provider.dart';
+import 'app_config.dart';
 
-void main() {
-  runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final appConfig = AppConfig();
+  await appConfig.init();
+
+  runApp(
+    ChangeNotifierProvider.value(
+      value: appConfig,
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -21,13 +32,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       themeMode: ThemeMode.light,
-      home: Scaffold(
-          appBar: AppBar(
-            backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-            title: Text("RealTime Traslator"),
-            centerTitle: true,
-          ),
-          body: HomePage()),
+      home: HomePage(),
     );
   }
 }

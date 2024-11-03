@@ -18,14 +18,23 @@ dependencies:
   openai_dart:
     path: /Users/kay/workspace/flutter/langchain_dart/packages/openai_dart
   flutter_sound: ^9.16.3
+  provider: ^6.1.2
+  shared_preferences: ^2.3.2
+  permission_handler: ^11.3.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
-  flutter_launcher_icons: ^0.14.1
+  flutter_launcher_icons: 0.13.0
 
 flutter:
   uses-material-design: true
   assets:
     - .env
+
+flutter_icons:
+  android: "ic_launcher"
+  ios: true
+  image_path: "assets/icon.png"
+  min_sdk_android: 21

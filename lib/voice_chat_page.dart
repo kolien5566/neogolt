@@ -6,7 +6,8 @@ import 'package:openai_dart/openai_dart.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 import 'package:flutter_sound/flutter_sound.dart';
-import 'package:neoglot/openai_client_singleton.dart';
+import 'package:provider/provider.dart';
+import 'app_config.dart';
 
 class VoiceChatPage extends StatefulWidget {
   const VoiceChatPage({super.key});
@@ -25,8 +26,9 @@ class _VoiceChatPageState extends State<VoiceChatPage> {
   String _transcript = '';
 
   @override
-  void initState() {
+  void initState() async {
     super.initState();
+    await _audioRecorder.hasPermission();
     _audioPlayer.openPlayer();
   }
 
@@ -38,7 +40,18 @@ class _VoiceChatPageState extends State<VoiceChatPage> {
   }
 
   Future<void> _startRecording() async {
+    final appConfig = Provider.of<AppConfig>(context, listen: false);
+    if (appConfig.apiKey.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please set your API key in the configuration drawer.'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
     if (await _audioRecorder.hasPermission()) {
+      _audioPlayer.stopPlayer();
       final directory = await getTemporaryDirectory();
       _recordingPath = '${directory.path}/audio.wav';
       const recordConfig = RecordConfig(
@@ -55,17 +68,18 @@ class _VoiceChatPageState extends State<VoiceChatPage> {
   }
 
   Future<void> _stopRecording() async {
-    await _audioRecorder.stop();
-    setState(() {
-      _isRecording = false;
-      _isProcessing = true;
-    });
-    await _processAudio();
+    if (_isRecording == true) {
+      await _audioRecorder.stop();
+      setState(() {
+        _isRecording = false;
+        _isProcessing = true;
+      });
+      await _processAudio();
+    }
   }
 
   Future<void> _processAudio() async {
-    // 打开录音文件
-    final client = OpenAIClientSingleton().client;
+    final appConfig = Provider.of<AppConfig>(context, listen: false);
     final audioFile = File(_recordingPath);
     if (!await audioFile.exists()) {
       print('Audio file does not exist');
@@ -79,19 +93,18 @@ class _VoiceChatPageState extends State<VoiceChatPage> {
     final audioBase64 = base64Encode(audioBytes);
 
     try {
-      // 初始化播放器并开始从流中播放
       await _audioPlayer.startPlayerFromStream(
-        codec: Codec.pcm16, // 指定解码器
-        numChannels: 1, // 通道数，1 为单声道，2 为立体声
-        sampleRate: 24000, // 采样率，与音频数据保持一致
+        codec: Codec.pcm16,
+        numChannels: 1,
+        sampleRate: 24000,
         whenFinished: () {
           if (_isStreamDone == true) {
             _audioPlayer.stopPlayer();
           }
         },
       );
-      // 向openai发送请求
-      final resStream = await client.createChatCompletionStream(
+
+      final resStream = await appConfig.openAIClient.createChatCompletionStream(
         request: CreateChatCompletionRequest(
           model: ChatCompletionModel.model(ChatCompletionModels.gpt4oAudioPreview),
           modalities: [ChatCompletionModality.text, ChatCompletionModality.audio],
@@ -116,7 +129,7 @@ class _VoiceChatPageState extends State<VoiceChatPage> {
           ],
         ),
       );
-      // 处理返回的音频流
+
       String partialTranscript = '';
       _isStreamDone = false;
       await for (final chunk in resStream) {
@@ -138,6 +151,16 @@ class _VoiceChatPageState extends State<VoiceChatPage> {
       _isStreamDone = true;
     } catch (e) {
       print('Error processing audio: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error processing audio: $e'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    } finally {
+      setState(() {
+        _isProcessing = false;
+      });
     }
   }
 
@@ -147,14 +170,28 @@ class _VoiceChatPageState extends State<VoiceChatPage> {
       children: [
         Expanded(
           flex: 3,
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: EdgeInsets.all(16),
-              child: Text(
-                _transcript,
-                style: const TextStyle(fontSize: 16),
+          child: Column(
+            children: [
+              if (_transcript.isNotEmpty)
+                IconButton(
+                  icon: Icon(Icons.close, size: 24),
+                  onPressed: () {
+                    _audioPlayer.stopPlayer();
+                    setState(() {
+                      _transcript = '';
+                    });
+                  },
+                ),
+              SingleChildScrollView(
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text(
+                    _transcript,
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
         ),
         Expanded(
