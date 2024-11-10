@@ -26,9 +26,9 @@ class _VoiceChatPageState extends State<VoiceChatPage> {
   String _transcript = '';
 
   @override
-  void initState() async {
+  void initState() {
     super.initState();
-    await _audioRecorder.hasPermission();
+    _audioRecorder.hasPermission();
     _audioPlayer.openPlayer();
   }
 

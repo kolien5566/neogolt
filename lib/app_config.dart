@@ -24,8 +24,8 @@ class AppConfig extends ChangeNotifier {
     await dotenv.load(fileName: ".env");
     _prefs = await SharedPreferences.getInstance();
     _useProxy = _prefs.getBool('useProxy') ?? false;
-    // _apiKey = _prefs.getString('apiKey') ?? '';
-    _apiKey = dotenv.env['OPENAI_API_KEY'] ?? '';
+    _apiKey = _prefs.getString('apiKey') ?? '';
+    //_apiKey = dotenv.env['OPENAI_API_KEY'] ?? '';
     _language1 = _prefs.getString('language1') ?? 'Chinese';
     _language2 = _prefs.getString('language2') ?? 'English';
     _updateOpenAIClient();
